@@ -9,8 +9,10 @@ const io = require("socket.io")(http, {
 const router = require("./router");
 const port = process.env.PORT || 3003;
 
-const users = [];
-const rooms = [];
+let users = [];
+let rooms = [];
+
+console.log(users);
 
 app.use(router);
 
@@ -19,6 +21,12 @@ app.get("/", (req, res) => {
 });
 
 io.on("connection", (socket) => {
+  // sets name
+  socket.on("send-name", (username) => {
+    users.push({ id: socket.id, name: username });
+    console.log(users);
+  });
+
   //join room
   socket.on("join-room", (roomName) => {
     socket.join(roomName);
@@ -33,15 +41,17 @@ io.on("connection", (socket) => {
 
   /// message for user leaving
   socket.on("disconnect", () => {
-    io.emit("leave-message", `Guest-${socket.id.split("", 1)} left.`);
-    io.emit("leave-message-2", count);
+    if (!users.name) {
+      io.emit("leave-message", `Guest-${socket.id.split("", 1)} left.`);
+      io.emit("leave-message-2", count);
+    } else {
+      io.emit("leave-message", `${users.name} left.`);
+      io.emit("leave-message-2", count);
+    }
   });
 
   /// message for the user joining
-  socket.broadcast.emit(
-    "join-message",
-    `Guest-${socket.id.split("", 1)} has joined.`
-  );
+  socket.broadcast.emit("join-message", `${users.name} has joined.`);
 
   /// syncing video
   socket.on("sync-audio", (played, songs, upNext, Duration) => {
@@ -80,11 +90,21 @@ io.on("connection", (socket) => {
   });
 
   // sends song submission notification
-  socket.on("submit-notification", (songSubmissionTitle) => {
-    io.emit(
-      "send-notification",
-      `${songSubmissionTitle} was submitted by Guest-${socket.id.split("", 1)}.`
-    );
+  socket.on("submit-notification", (songSubmissionTitle, name) => {
+    if (!name) {
+      io.emit(
+        "send-notification",
+        `${songSubmissionTitle} was submitted by Guest-${socket.id.split(
+          "",
+          1
+        )}.`
+      );
+    } else {
+      io.emit(
+        "send-notification",
+        `${songSubmissionTitle} was submitted by ${name}.`
+      );
+    }
   });
 
   let count = io.engine.clientsCount;
