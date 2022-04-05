@@ -1,5 +1,6 @@
 const app = require("express")();
 const http = require("http").Server(app);
+const cors = require("cors");
 const io = require("socket.io")(http, {
   cors: {
     origin: ["http://localhost:3000"],
@@ -15,6 +16,7 @@ let rooms = [];
 console.log(users);
 
 app.use(router);
+app.use(cors());
 
 app.get("/", (req, res) => {
   res.send("<h1>Hey Socket.io</h1>");
